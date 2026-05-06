@@ -1,0 +1,1010 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SymmetryLab. Cross-modality tracking for surgical video</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;1,9..40,300&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --ink: #0e0e0e;
+    --ink-muted: #5a5a5a;
+    --ink-faint: #999;
+    --surface: #f7f6f2;
+    --surface-alt: #eeecea;
+    --white: #ffffff;
+    --accent: #1a3a2a;
+    --accent-mid: #2d6347;
+    --accent-light: #c8dfd2;
+    --accent-pale: #eef5f1;
+    --border: rgba(0,0,0,0.10);
+    --border-strong: rgba(0,0,0,0.18);
+    --serif: 'DM Serif Display', Georgia, serif;
+    --sans: 'DM Sans', system-ui, sans-serif;
+    --radius: 4px;
+    --radius-lg: 10px;
+  }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    font-family: var(--sans);
+    background: var(--surface);
+    color: var(--ink);
+    font-size: 16px;
+    line-height: 1.65;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  nav {
+    position: fixed;
+    top: 0; left: 0; right: 0;
+    z-index: 100;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 48px;
+    height: 64px;
+    background: rgba(247,246,242,0.92);
+    backdrop-filter: blur(12px);
+    border-bottom: 0.5px solid var(--border);
+  }
+
+  .nav-logo {
+    font-family: var(--serif);
+    font-size: 18px;
+    letter-spacing: -0.01em;
+    color: var(--ink);
+    text-decoration: none;
+  }
+
+  .nav-links { display: flex; gap: 36px; list-style: none; }
+
+  .nav-links a {
+    font-size: 13px;
+    font-weight: 400;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--ink-muted);
+    text-decoration: none;
+    transition: color 0.2s;
+  }
+
+  .nav-links a:hover { color: var(--ink); }
+
+  .nav-cta {
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--white) !important;
+    background: var(--accent);
+    padding: 8px 20px;
+    border-radius: var(--radius);
+    text-decoration: none;
+    transition: background 0.2s;
+  }
+
+  .nav-cta:hover { background: var(--accent-mid) !important; color: var(--white) !important; }
+
+  .hero {
+    min-height: 100vh;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    padding-top: 64px;
+  }
+
+  .hero-left {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    padding: 80px 64px 80px 80px;
+  }
+
+  .hero-eyebrow {
+    font-size: 11px;
+    font-weight: 500;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--accent-mid);
+    margin-bottom: 28px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .hero-eyebrow::before {
+    content: '';
+    display: block;
+    width: 24px;
+    height: 1px;
+    background: var(--accent-mid);
+  }
+
+  h1 {
+    font-family: var(--serif);
+    font-size: clamp(40px, 4.5vw, 62px);
+    line-height: 1.08;
+    letter-spacing: -0.02em;
+    color: var(--ink);
+    margin-bottom: 28px;
+  }
+
+  h1 em { font-style: italic; color: var(--accent-mid); }
+
+  .hero-sub {
+    font-size: 17px;
+    font-weight: 300;
+    color: var(--ink-muted);
+    line-height: 1.7;
+    max-width: 480px;
+    margin-bottom: 48px;
+  }
+
+  .hero-actions { display: flex; gap: 16px; align-items: center; }
+
+  .btn-primary {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: var(--accent);
+    color: var(--white);
+    font-family: var(--sans);
+    font-size: 14px;
+    font-weight: 500;
+    padding: 14px 28px;
+    border-radius: var(--radius);
+    text-decoration: none;
+    transition: background 0.2s, transform 0.15s;
+  }
+
+  .btn-primary:hover { background: var(--accent-mid); transform: translateY(-1px); }
+
+  .btn-secondary {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    color: var(--ink-muted);
+    font-size: 14px;
+    font-weight: 400;
+    text-decoration: none;
+    border-bottom: 1px solid var(--border-strong);
+    padding-bottom: 2px;
+    transition: color 0.2s, border-color 0.2s;
+  }
+
+  .btn-secondary:hover { color: var(--ink); border-color: var(--ink); }
+
+  .hero-right {
+    background: var(--accent);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .hero-visual {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 60px;
+  }
+
+  section { padding: 100px 80px; }
+
+  .section-inner { max-width: 1100px; margin: 0 auto; }
+
+  .section-label {
+    font-size: 11px;
+    font-weight: 500;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--accent-mid);
+    margin-bottom: 20px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .section-label::before {
+    content: '';
+    display: block;
+    width: 24px;
+    height: 1px;
+    background: var(--accent-mid);
+  }
+
+  h2 {
+    font-family: var(--serif);
+    font-size: clamp(30px, 3vw, 44px);
+    line-height: 1.1;
+    letter-spacing: -0.02em;
+    color: var(--ink);
+    margin-bottom: 20px;
+  }
+
+  h2 em { font-style: italic; color: var(--accent-mid); }
+
+  .lead {
+    font-size: 17px;
+    font-weight: 300;
+    color: var(--ink-muted);
+    line-height: 1.75;
+    max-width: 640px;
+  }
+
+  #capability { background: var(--white); }
+
+  .capability-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 64px;
+    margin-top: 64px;
+    align-items: start;
+  }
+
+  .capability-text p {
+    font-size: 16px;
+    color: var(--ink-muted);
+    line-height: 1.75;
+    margin-bottom: 20px;
+  }
+
+  .capability-text p:last-child { margin-bottom: 0; }
+
+  .capability-diagram {
+    background: var(--surface);
+    border-radius: var(--radius-lg);
+    padding: 40px;
+    border: 0.5px solid var(--border);
+  }
+
+  .pillars {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1px;
+    margin-top: 80px;
+    background: var(--border);
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+  }
+
+  .pillar { background: var(--white); padding: 36px 32px; }
+
+  .pillar-icon {
+    width: 28px;
+    height: 28px;
+    margin-bottom: 24px;
+    color: var(--accent-mid);
+  }
+
+  .pillar h3 {
+    font-family: var(--serif);
+    font-size: 18px;
+    color: var(--ink);
+    margin-bottom: 10px;
+    line-height: 1.3;
+  }
+
+  .pillar p {
+    font-size: 14px;
+    color: var(--ink-muted);
+    line-height: 1.7;
+  }
+
+  #approach { background: var(--surface); }
+
+  .approach-steps {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 2px;
+    margin-top: 64px;
+    background: var(--border);
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+  }
+
+  .step { background: var(--white); padding: 40px 36px; position: relative; }
+
+  .step-number {
+    font-family: var(--serif);
+    font-size: 48px;
+    color: var(--accent-light);
+    line-height: 1;
+    margin-bottom: 20px;
+    display: block;
+  }
+
+  .step h3 {
+    font-family: var(--serif);
+    font-size: 20px;
+    color: var(--ink);
+    margin-bottom: 12px;
+    line-height: 1.3;
+  }
+
+  .step p {
+    font-size: 14px;
+    color: var(--ink-muted);
+    line-height: 1.7;
+  }
+
+  #applications { background: var(--accent); color: var(--white); }
+  #applications .section-label { color: var(--accent-light); }
+  #applications .section-label::before { background: var(--accent-light); }
+  #applications h2 { color: var(--white); }
+  #applications h2 em { color: var(--accent-light); }
+  #applications .lead { color: rgba(255,255,255,0.65); }
+
+  .applications-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 2px;
+    margin-top: 64px;
+    background: rgba(255,255,255,0.08);
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+  }
+
+  .application-card {
+    background: rgba(255,255,255,0.04);
+    padding: 40px 36px;
+    border: none;
+    transition: background 0.2s;
+  }
+
+  .application-card:hover { background: rgba(255,255,255,0.08); }
+
+  .app-icon {
+    width: 40px;
+    height: 40px;
+    background: rgba(255,255,255,0.1);
+    border-radius: var(--radius);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 24px;
+  }
+
+  .application-card h3 {
+    font-family: var(--serif);
+    font-size: 20px;
+    color: var(--white);
+    margin-bottom: 12px;
+    line-height: 1.3;
+  }
+
+  .application-card p {
+    font-size: 14px;
+    color: rgba(255,255,255,0.55);
+    line-height: 1.7;
+  }
+
+  #integration { background: var(--white); }
+
+  .integration-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 80px;
+    margin-top: 64px;
+    align-items: start;
+  }
+
+  .integration-text p {
+    font-size: 16px;
+    color: var(--ink-muted);
+    line-height: 1.75;
+    margin-bottom: 20px;
+  }
+
+  .standards-list {
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  .standards-list li {
+    display: flex;
+    align-items: flex-start;
+    gap: 16px;
+    padding: 18px 20px;
+    background: var(--surface);
+    border-radius: var(--radius);
+    font-size: 14px;
+    color: var(--ink-muted);
+    line-height: 1.5;
+  }
+
+  .standards-list li strong {
+    display: block;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--ink);
+    margin-bottom: 2px;
+  }
+
+  .std-badge {
+    flex-shrink: 0;
+    font-size: 10px;
+    font-weight: 500;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    background: var(--accent-pale);
+    color: var(--accent-mid);
+    padding: 4px 8px;
+    border-radius: var(--radius);
+    white-space: nowrap;
+    margin-top: 2px;
+  }
+
+  #contact { background: var(--surface); padding: 120px 80px; }
+
+  .contact-inner { max-width: 700px; margin: 0 auto; text-align: center; }
+  .contact-inner h2 { margin-bottom: 20px; }
+  .contact-inner .lead { margin: 0 auto 48px; }
+
+  .contact-card {
+    background: var(--white);
+    border: 0.5px solid var(--border-strong);
+    border-radius: var(--radius-lg);
+    padding: 48px;
+    text-align: left;
+  }
+
+  .contact-card p {
+    font-size: 14px;
+    color: var(--ink-muted);
+    margin-bottom: 8px;
+    line-height: 1.6;
+  }
+
+  .contact-email {
+    font-family: var(--serif);
+    font-size: 26px;
+    color: var(--ink);
+    text-decoration: none;
+    border-bottom: 2px solid var(--accent-light);
+    transition: border-color 0.2s;
+    display: inline-block;
+    margin-bottom: 32px;
+  }
+
+  .contact-email:hover { border-color: var(--accent-mid); }
+
+  .contact-note {
+    font-size: 13px;
+    color: var(--ink-faint);
+    padding-top: 24px;
+    border-top: 0.5px solid var(--border);
+    margin-top: 8px;
+    line-height: 1.6;
+  }
+
+  footer {
+    background: var(--ink);
+    color: rgba(255,255,255,0.45);
+    padding: 40px 80px;
+    font-size: 12px;
+    line-height: 1.7;
+  }
+
+  .footer-inner {
+    max-width: 1100px;
+    margin: 0 auto;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 40px;
+  }
+
+  .footer-logo {
+    font-family: var(--serif);
+    font-size: 16px;
+    color: rgba(255,255,255,0.7);
+    margin-bottom: 8px;
+  }
+
+  .footer-links { display: flex; gap: 24px; list-style: none; margin-top: 4px; }
+
+  .footer-links a {
+    color: rgba(255,255,255,0.35);
+    text-decoration: none;
+    font-size: 12px;
+    transition: color 0.2s;
+  }
+
+  .footer-links a:hover { color: rgba(255,255,255,0.65); }
+
+  .footer-disclaimer {
+    max-width: 500px;
+    font-size: 11px;
+    line-height: 1.65;
+    color: rgba(255,255,255,0.28);
+  }
+
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(20px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  .hero-eyebrow { animation: fadeUp 0.6s ease both; }
+  h1 { animation: fadeUp 0.6s 0.1s ease both; }
+  .hero-sub { animation: fadeUp 0.6s 0.2s ease both; }
+  .hero-actions { animation: fadeUp 0.6s 0.3s ease both; }
+
+  @keyframes pulse {
+    0%, 100% { opacity: 0.6; }
+    50% { opacity: 1; }
+  }
+  .pulse-dot { animation: pulse 2s ease-in-out infinite; }
+
+  @keyframes mode-bg {
+    0%, 22%   { fill: rgba(80, 110, 200, 0.10); }
+    25%, 30%  { fill: rgba(255, 255, 255, 0.02); }
+    33%, 100% { fill: rgba(255, 255, 255, 0.04); }
+  }
+  .mode-bg { animation: mode-bg 12s ease-in-out infinite; }
+
+  @keyframes label-fluo {
+    0%, 22%  { opacity: 1; }
+    25%, 100% { opacity: 0; }
+  }
+  .label-fluo { animation: label-fluo 12s ease-in-out infinite; }
+
+  @keyframes label-white {
+    0%, 28%  { opacity: 0; }
+    33%, 100% { opacity: 1; }
+  }
+  .label-white { animation: label-white 12s ease-in-out infinite; }
+
+  @keyframes region-solid {
+    0%, 22%   { opacity: 1; }
+    25%, 100% { opacity: 0; }
+  }
+  .region-solid { animation: region-solid 12s ease-in-out infinite; }
+
+  @keyframes region-inferred {
+    0%, 28%   { opacity: 0; }
+    33%, 100% { opacity: 1; }
+  }
+  .region-inferred { animation: region-inferred 12s ease-in-out infinite; }
+
+  @keyframes transition-flash {
+    0%, 22%   { opacity: 0; }
+    25%, 30%  { opacity: 1; }
+    33%, 100% { opacity: 0; }
+  }
+  .transition-flash { animation: transition-flash 12s ease-in-out infinite; }
+
+  @keyframes conf-fill {
+    0%, 22%   { width: 198px; }
+    33%       { width: 178px; }
+    55%       { width: 130px; }
+    70%       { width: 108px; }
+    80%       { width: 162px; }
+    90%, 100% { width: 198px; }
+  }
+  .conf-fill { animation: conf-fill 12s ease-in-out infinite; }
+
+  @keyframes conf-color {
+    0%, 50%   { fill: rgba(200, 223, 210, 0.85); }
+    65%, 75%  { fill: rgba(240, 200, 120, 0.85); }
+    85%, 100% { fill: rgba(200, 223, 210, 0.85); }
+  }
+  .conf-color { animation: conf-color 12s ease-in-out infinite; }
+
+  @keyframes num-100 { 0%, 22% { opacity: 1 } 25%, 100% { opacity: 0 } }
+  @keyframes num-88  { 0%, 28% { opacity: 0 } 33%, 50% { opacity: 1 } 55%, 100% { opacity: 0 } }
+  @keyframes num-66  { 0%, 50% { opacity: 0 } 55%, 65% { opacity: 1 } 70%, 100% { opacity: 0 } }
+  @keyframes num-54  { 0%, 65% { opacity: 0 } 70%, 78% { opacity: 1 } 80%, 100% { opacity: 0 } }
+  @keyframes num-82  { 0%, 78% { opacity: 0 } 82%, 88% { opacity: 1 } 90%, 100% { opacity: 0 } }
+  @keyframes num-99  { 0%, 88% { opacity: 0 } 90%, 100% { opacity: 1 } }
+  .n100 { animation: num-100 12s linear infinite; }
+  .n88  { animation: num-88  12s linear infinite; }
+  .n66  { animation: num-66  12s linear infinite; }
+  .n54  { animation: num-54  12s linear infinite; }
+  .n82  { animation: num-82  12s linear infinite; }
+  .n99  { animation: num-99  12s linear infinite; }
+
+  @keyframes reanchor-ping {
+    0%, 75%  { opacity: 0; r: 4; }
+    78%      { opacity: 0.9; r: 4; }
+    85%      { opacity: 0; r: 14; }
+    100%     { opacity: 0; r: 4; }
+  }
+  .reanchor { animation: reanchor-ping 12s ease-out infinite; }
+
+  @keyframes scope-drift {
+    0%, 100% { transform: translate(0, 0); }
+    25%      { transform: translate(3px, -2px); }
+    50%      { transform: translate(-2px, 3px); }
+    75%      { transform: translate(2px, 2px); }
+  }
+  .scope-group { animation: scope-drift 8s ease-in-out infinite; transform-origin: center; transform-box: fill-box; }
+
+  @media (prefers-reduced-motion: reduce) {
+    .mode-bg, .label-fluo, .label-white, .region-solid, .region-inferred,
+    .transition-flash, .conf-fill, .conf-color,
+    .n100, .n88, .n66, .n54, .n82, .n99,
+    .reanchor, .scope-group, .pulse-dot {
+      animation: none;
+    }
+    .label-fluo { opacity: 0; }
+    .label-white { opacity: 1; }
+    .region-solid { opacity: 0; }
+    .region-inferred { opacity: 1; }
+    .conf-fill { width: 162px; }
+  }
+
+  @media (max-width: 900px) {
+    nav { padding: 0 24px; }
+    .nav-links { display: none; }
+    .hero { grid-template-columns: 1fr; }
+    .hero-right { min-height: 320px; }
+    .hero-left { padding: 60px 32px; }
+    section { padding: 72px 32px; }
+    .capability-grid,
+    .integration-grid { grid-template-columns: 1fr; gap: 40px; }
+    .approach-steps,
+    .applications-grid,
+    .pillars { grid-template-columns: 1fr; }
+    #contact { padding: 80px 32px; }
+    footer { padding: 32px 24px; }
+    .footer-inner { flex-direction: column; gap: 24px; }
+  }
+</style>
+</head>
+<body>
+
+<nav>
+  <a href="#" class="nav-logo">SymmetryLab</a>
+  <ul class="nav-links">
+    <li><a href="#capability">Capability</a></li>
+    <li><a href="#approach">Approach</a></li>
+    <li><a href="#applications">Applications</a></li>
+    <li><a href="#integration">Integration</a></li>
+    <li><a href="#contact" class="nav-cta">Get in touch</a></li>
+  </ul>
+</nav>
+
+<section class="hero" style="padding:0;">
+  <div class="hero-left">
+    <div class="hero-eyebrow">Surgical computer vision</div>
+    <h1>Tracking what<br>imaging <em>hides.</em></h1>
+    <p class="hero-sub">Real-time positional tracking across changing imaging conditions in surgical video. Multiple regions of interest, continuous through lighting transitions, with calibrated confidence. Built to integrate into medical devices.</p>
+    <div class="hero-actions">
+      <a href="#contact" class="btn-primary">
+        Request technical brief
+        <svg width="14" height="14" fill="none" viewBox="0 0 14 14"><path d="M3 7h8M7.5 3.5L11 7l-3.5 3.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </a>
+      <a href="#capability" class="btn-secondary">See how it works</a>
+    </div>
+  </div>
+
+  <div class="hero-right">
+    <div class="hero-visual">
+      <svg viewBox="0 0 380 380" fill="none" xmlns="http://www.w3.org/2000/svg" style="width:100%;max-width:420px;">
+        <defs>
+          <clipPath id="scopeClip">
+            <circle cx="190" cy="180" r="140"/>
+          </clipPath>
+        </defs>
+
+        <!-- Outer scope ring -->
+        <circle cx="190" cy="180" r="140" fill="none" stroke="rgba(255,255,255,0.18)" stroke-width="1"/>
+
+        <!-- Mode background tint, animated between fluorescence blue and white light neutral -->
+        <circle class="mode-bg" cx="190" cy="180" r="139" fill="rgba(80,110,200,0.10)"/>
+
+        <!-- Scene contents, with subtle drift to suggest live camera -->
+        <g class="scope-group" clip-path="url(#scopeClip)">
+          <!-- Tissue ellipses -->
+          <ellipse cx="160" cy="160" rx="58" ry="42" fill="rgba(255,255,255,0.04)" stroke="rgba(255,255,255,0.08)" stroke-width="0.5"/>
+          <ellipse cx="220" cy="205" rx="50" ry="38" fill="rgba(255,255,255,0.04)" stroke="rgba(255,255,255,0.08)" stroke-width="0.5"/>
+          <ellipse cx="170" cy="240" rx="40" ry="28" fill="rgba(255,255,255,0.04)" stroke="rgba(255,255,255,0.08)" stroke-width="0.5"/>
+
+          <!-- Vessels -->
+          <path d="M70 140 Q120 150 165 142 Q210 134 260 148 Q295 156 320 150" stroke="rgba(200,223,210,0.32)" stroke-width="1.5" stroke-linecap="round"/>
+          <path d="M80 210 Q130 200 175 215 Q220 230 270 225 Q300 222 320 215" stroke="rgba(200,223,210,0.32)" stroke-width="1.5" stroke-linecap="round"/>
+          <path d="M140 165 Q150 185 155 215" stroke="rgba(200,223,210,0.22)" stroke-width="1" stroke-linecap="round"/>
+          <path d="M230 160 Q240 180 235 215" stroke="rgba(200,223,210,0.22)" stroke-width="1" stroke-linecap="round"/>
+
+          <!-- Landmark anchors (always visible) -->
+          <circle cx="115" cy="146" r="3.5" fill="none" stroke="rgba(200,223,210,0.7)" stroke-width="1.2"/>
+          <circle cx="245" cy="142" r="3.5" fill="none" stroke="rgba(200,223,210,0.7)" stroke-width="1.2"/>
+          <circle cx="135" cy="218" r="3.5" fill="none" stroke="rgba(200,223,210,0.7)" stroke-width="1.2"/>
+          <circle cx="260" cy="222" r="3.5" fill="none" stroke="rgba(200,223,210,0.7)" stroke-width="1.2"/>
+          <!-- Reanchor ping circle: animates radius outward at re-anchor moment -->
+          <circle class="reanchor" cx="245" cy="142" r="4" fill="none" stroke="rgba(200,223,210,1)" stroke-width="1.2"/>
+
+          <!-- Three regions, two visual states each: solid (detected) and inferred (dashed) -->
+
+          <!-- Region 1 -->
+          <g class="region-solid">
+            <circle cx="170" cy="172" r="16" fill="rgba(200,223,210,0.18)" stroke="rgba(200,223,210,0.7)" stroke-width="1.4"/>
+          </g>
+          <g class="region-inferred">
+            <circle cx="170" cy="172" r="16" fill="none" stroke="rgba(200,223,210,0.5)" stroke-width="1.2" stroke-dasharray="3 3"/>
+            <circle cx="170" cy="172" r="6" fill="rgba(200,223,210,0.5)"/>
+          </g>
+
+          <!-- Region 2 -->
+          <g class="region-solid">
+            <circle cx="232" cy="195" r="10" fill="rgba(200,223,210,0.16)" stroke="rgba(200,223,210,0.65)" stroke-width="1.4"/>
+          </g>
+          <g class="region-inferred">
+            <circle cx="232" cy="195" r="10" fill="none" stroke="rgba(200,223,210,0.5)" stroke-width="1.2" stroke-dasharray="3 3"/>
+            <circle cx="232" cy="195" r="4" fill="rgba(200,223,210,0.5)"/>
+          </g>
+
+          <!-- Region 3 -->
+          <g class="region-solid">
+            <circle cx="180" cy="232" r="12" fill="rgba(200,223,210,0.16)" stroke="rgba(200,223,210,0.65)" stroke-width="1.4"/>
+          </g>
+          <g class="region-inferred">
+            <circle cx="180" cy="232" r="12" fill="none" stroke="rgba(200,223,210,0.5)" stroke-width="1.2" stroke-dasharray="3 3"/>
+            <circle cx="180" cy="232" r="5" fill="rgba(200,223,210,0.5)"/>
+          </g>
+        </g>
+
+        <!-- Lighting transition flash overlay -->
+        <circle class="transition-flash" cx="190" cy="180" r="139" fill="rgba(255,255,255,0.25)"/>
+
+        <!-- Mode label, two text elements cross-fading -->
+        <text class="label-fluo" x="190" y="44" text-anchor="middle" font-family="'DM Sans',sans-serif" font-size="10" letter-spacing="0.18em" fill="rgba(200,223,210,0.85)">FLUORESCENCE</text>
+        <text class="label-white" x="190" y="44" text-anchor="middle" font-family="'DM Sans',sans-serif" font-size="10" letter-spacing="0.18em" fill="rgba(255,255,255,0.6)">WHITE LIGHT</text>
+
+        <!-- Confidence bar -->
+        <g transform="translate(60,346)">
+          <text x="0" y="0" font-family="'DM Sans',sans-serif" font-size="10" fill="rgba(255,255,255,0.45)" letter-spacing="0.08em">CONFIDENCE</text>
+          <rect x="92" y="-9" width="200" height="6" rx="3" fill="rgba(255,255,255,0.1)"/>
+          <rect class="conf-fill conf-color" x="92" y="-9" width="198" height="6" rx="3"/>
+
+          <!-- Rotating numeric readout -->
+          <g font-family="'DM Sans',sans-serif" font-size="11" font-weight="500" fill="rgba(255,255,255,0.7)">
+            <text class="n100" x="305" y="0">100%</text>
+            <text class="n88"  x="305" y="0">88%</text>
+            <text class="n66"  x="305" y="0">66%</text>
+            <text class="n54"  x="305" y="0">54%</text>
+            <text class="n82"  x="305" y="0">82%</text>
+            <text class="n99"  x="305" y="0">99%</text>
+          </g>
+        </g>
+
+        <!-- Legend -->
+        <g transform="translate(60,372)">
+          <circle cx="0" cy="0" r="3.5" fill="none" stroke="rgba(200,223,210,0.7)" stroke-width="1.2"/>
+          <text x="10" y="3" font-family="'DM Sans',sans-serif" font-size="9" fill="rgba(255,255,255,0.32)" letter-spacing="0.04em">landmark</text>
+          <circle cx="80" cy="0" r="4" fill="rgba(200,223,210,0.4)"/>
+          <text x="90" y="3" font-family="'DM Sans',sans-serif" font-size="9" fill="rgba(255,255,255,0.32)" letter-spacing="0.04em">tracked region</text>
+          <text x="200" y="3" font-family="'DM Sans',sans-serif" font-size="9" fill="rgba(255,255,255,0.2)" letter-spacing="0.04em">Illustrative concept only</text>
+        </g>
+      </svg>
+    </div>
+  </div>
+</section>
+
+<section id="capability">
+  <div class="section-inner">
+    <div class="section-label">Capability</div>
+    <h2>What we <em>build</em></h2>
+
+    <div class="capability-grid">
+      <div class="capability-text">
+        <p>SymmetryLab develops computer vision modules for surgical navigation systems. Our focus is on a class of problems that has been consistently difficult for endoscopic and minimally invasive surgical video: maintaining spatial reference when imaging conditions change.</p>
+        <p>Features of interest are identified in the imaging mode where they are most visible, then continuously tracked as the surgeon switches between modalities, across lighting changes, contrast washout, and repeated transitions during a procedure. Multiple regions are tracked simultaneously, with confidence reported per region.</p>
+        <p>The technology is designed as a software component for integration into regulated medical devices by qualified manufacturers. It is not a standalone clinical product.</p>
+      </div>
+
+      <div class="capability-diagram">
+        <svg viewBox="0 0 340 280" fill="none" xmlns="http://www.w3.org/2000/svg" style="width:100%;">
+          <rect x="10" y="20" width="140" height="50" rx="6" fill="#eef5f1" stroke="#c8dfd2" stroke-width="1"/>
+          <text x="80" y="40" text-anchor="middle" font-family="'DM Sans',sans-serif" font-size="11" font-weight="500" fill="#1a3a2a">Detect &amp; reference</text>
+          <text x="80" y="56" text-anchor="middle" font-family="'DM Sans',sans-serif" font-size="10" fill="#5a5a5a">all regions, blue light</text>
+
+          <rect x="190" y="20" width="140" height="50" rx="6" fill="#eef5f1" stroke="#c8dfd2" stroke-width="1"/>
+          <text x="260" y="40" text-anchor="middle" font-family="'DM Sans',sans-serif" font-size="11" font-weight="500" fill="#1a3a2a">Anchor to anatomy</text>
+          <text x="260" y="56" text-anchor="middle" font-family="'DM Sans',sans-serif" font-size="10" fill="#5a5a5a">stable landmarks</text>
+
+          <line x1="150" y1="45" x2="190" y2="45" stroke="#c8dfd2" stroke-width="1.5"/>
+          <path d="M186 41l4 4-4 4" stroke="#c8dfd2" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+
+          <rect x="10" y="120" width="140" height="50" rx="6" fill="#f7f6f2" stroke="#ddd" stroke-width="1"/>
+          <text x="80" y="140" text-anchor="middle" font-family="'DM Sans',sans-serif" font-size="11" font-weight="500" fill="#0e0e0e">Track &amp; reconstruct</text>
+          <text x="80" y="156" text-anchor="middle" font-family="'DM Sans',sans-serif" font-size="10" fill="#5a5a5a">white light, all regions</text>
+
+          <rect x="190" y="120" width="140" height="50" rx="6" fill="#1a3a2a" stroke="none"/>
+          <text x="260" y="140" text-anchor="middle" font-family="'DM Sans',sans-serif" font-size="11" font-weight="500" fill="#c8dfd2">Calibrated confidence</text>
+          <text x="260" y="156" text-anchor="middle" font-family="'DM Sans',sans-serif" font-size="10" fill="rgba(200,223,210,0.6)">shape vs reference</text>
+
+          <line x1="150" y1="145" x2="190" y2="145" stroke="#ccc" stroke-width="1.5"/>
+          <path d="M186 141l4 4-4 4" stroke="#ccc" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+
+          <line x1="80" y1="70" x2="80" y2="120" stroke="#c8dfd2" stroke-width="1" stroke-dasharray="3 3"/>
+          <path d="M76 116l4 4 4-4" stroke="#c8dfd2" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+
+          <line x1="260" y1="70" x2="260" y2="120" stroke="#c8dfd2" stroke-width="1" stroke-dasharray="3 3"/>
+          <path d="M256 116l4 4 4-4" stroke="#c8dfd2" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+
+          <rect x="100" y="86" width="80" height="22" rx="4" fill="#fff7ed" stroke="#f0c080" stroke-width="0.5"/>
+          <text x="140" y="100" text-anchor="middle" font-family="'DM Sans',sans-serif" font-size="10" fill="#b07020">lighting switch</text>
+
+          <rect x="80" y="208" width="180" height="46" rx="6" fill="#2d6347" stroke="none"/>
+          <text x="170" y="227" text-anchor="middle" font-family="'DM Sans',sans-serif" font-size="11" font-weight="500" fill="#ffffff">Multi-region overlay</text>
+          <text x="170" y="243" text-anchor="middle" font-family="'DM Sans',sans-serif" font-size="10" fill="rgba(255,255,255,0.6)">+ per-region confidence</text>
+
+          <line x1="260" y1="170" x2="260" y2="195" stroke="#2d6347" stroke-width="1.5"/>
+          <line x1="260" y1="195" x2="170" y2="195" stroke="#2d6347" stroke-width="1.5"/>
+          <line x1="170" y1="195" x2="170" y2="208" stroke="#2d6347" stroke-width="1.5"/>
+          <path d="M166 204l4 4 4-4" stroke="#2d6347" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+
+          <text x="170" y="270" text-anchor="middle" font-family="'DM Sans',sans-serif" font-size="9" fill="#999" letter-spacing="0.04em">Illustrative. Not actual output</text>
+        </svg>
+      </div>
+    </div>
+
+    <div class="pillars">
+      <div class="pillar">
+        <svg class="pillar-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+          <circle cx="7" cy="7" r="2.5"/>
+          <circle cx="17" cy="7" r="2.5"/>
+          <circle cx="7" cy="17" r="2.5"/>
+          <circle cx="17" cy="17" r="2.5"/>
+          <path d="M9.5 7h5M9.5 17h5M7 9.5v5M17 9.5v5" stroke-dasharray="2 2"/>
+        </svg>
+        <h3>Multi-region tracking</h3>
+        <p>Multiple regions of interest detected and tracked in parallel, each with independent positional state and confidence. The number of regions is determined by what is found in the source modality, not fixed in advance.</p>
+      </div>
+
+      <div class="pillar">
+        <svg class="pillar-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+          <path d="M3 12h4l3-7 4 14 3-7h4"/>
+        </svg>
+        <h3>Continuous through transitions</h3>
+        <p>Tracking persists across imaging mode switches and continues frame-to-frame through extended sequences. Repeated lighting transitions during a single procedure are handled without manual reacquisition.</p>
+      </div>
+
+      <div class="pillar">
+        <svg class="pillar-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+          <circle cx="12" cy="12" r="9"/>
+          <path d="M12 7v5l3 2"/>
+        </svg>
+        <h3>Geometrically grounded confidence</h3>
+        <p>Per-region confidence is derived from geometric consistency between the live reconstruction and the reference captured at the point of detection. Not a black-box score, but a measurable signal the integrating system can act on.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="approach">
+  <div class="section-inner">
+    <div class="section-label">Approach</div>
+    <h2>How it <em>works</em></h2>
+    <p class="lead">Conventional tracking fails when imaging conditions change. We separate what is tracked from what is inferred. This makes the system robust to exactly the transitions where others break.</p>
+
+    <div class="approach-steps">
+      <div class="step">
+        <span class="step-number">01</span>
+        <h3>Detect in optimal conditions</h3>
+        <p>All features of interest are identified in the imaging mode where they are most visible. Position and shape of every region are captured at peak signal quality and stored as a reference set, not approximated.</p>
+      </div>
+      <div class="step">
+        <span class="step-number">02</span>
+        <h3>Anchor to stable anatomy</h3>
+        <p>Each region's position is expressed relative to anatomical landmarks visible across imaging modes. Landmark geometry is what we track, not pixel appearance, which makes the system robust to the visual change at the modality boundary.</p>
+      </div>
+      <div class="step">
+        <span class="step-number">03</span>
+        <h3>Reconstruct and report</h3>
+        <p>When conditions change, landmarks are re-identified and tracked continuously. Every region is reconstructed in parallel. Confidence is computed by comparing each live reconstruction to its reference, giving the device a calibrated signal per region.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="applications">
+  <div class="section-inner">
+    <div class="section-label">Applications</div>
+    <h2>Where it <em>applies</em></h2>
+    <p class="lead">The underlying methods generalise across any surgical context where imaging conditions vary or features become intermittently visible.</p>
+
+    <div class="applications-grid">
+      <div class="application-card">
+        <div class="app-icon">
+          <svg width="20" height="20" fill="none" viewBox="0 0 20 20"><circle cx="10" cy="10" r="7" stroke="rgba(200,223,210,0.8)" stroke-width="1.5"/><circle cx="10" cy="10" r="2.5" fill="rgba(200,223,210,0.6)"/><path d="M10 3v2M10 15v2M3 10h2M15 10h2" stroke="rgba(200,223,210,0.5)" stroke-width="1.5" stroke-linecap="round"/></svg>
+        </div>
+        <h3>Fluorescence-guided procedures</h3>
+        <p>Tumour and tissue localisation persisting through illumination mode changes. Multi-region positions maintained from fluorescence detection through white-light resection.</p>
+      </div>
+
+      <div class="application-card">
+        <div class="app-icon">
+          <svg width="20" height="20" fill="none" viewBox="0 0 20 20"><rect x="3" y="3" width="14" height="14" rx="3" stroke="rgba(200,223,210,0.8)" stroke-width="1.5"/><path d="M7 10h6M10 7v6" stroke="rgba(200,223,210,0.5)" stroke-width="1.5" stroke-linecap="round"/></svg>
+        </div>
+        <h3>Contrast-enhanced imaging</h3>
+        <p>Feature reference maintained as contrast washes out. Spatial awareness preserved through the full contrast cycle without requiring manual reacquisition.</p>
+      </div>
+
+      <div class="application-card">
+        <div class="app-icon">
+          <svg width="20" height="20" fill="none" viewBox="0 0 20 20"><path d="M4 10 Q10 4 16 10 Q10 16 4 10Z" stroke="rgba(200,223,210,0.8)" stroke-width="1.5"/><circle cx="10" cy="10" r="2" fill="rgba(200,223,210,0.5)"/></svg>
+        </div>
+        <h3>Endoscopic and laparoscopic navigation</h3>
+        <p>Anatomical reference maintained under variable lighting, viewpoint change, and instrument occlusion. Robust to the non-linear motion of flexible scopes.</p>
+      </div>
+
+      <div class="application-card">
+        <div class="app-icon">
+          <svg width="20" height="20" fill="none" viewBox="0 0 20 20"><path d="M3 10h4l3-6 4 12 3-6h3" stroke="rgba(200,223,210,0.8)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </div>
+        <h3>Multi-modality video</h3>
+        <p>Spatial correspondence across imaging modes within a single procedure. Supports devices that switch between two or more imaging modalities intraoperatively.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="integration">
+  <div class="section-inner">
+    <div class="section-label">Engineering &amp; Integration</div>
+    <h2>Built for <em>regulated</em> environments</h2>
+
+    <div class="integration-grid">
+      <div class="integration-text">
+        <p>SymmetryLab software is developed as a supplier-grade component, intended to sit inside CE-marked and FDA-cleared medical devices manufactured by our clients. Our development practices and deliverables are designed for the expectations of regulated medical software.</p>
+        <p>We deliver software components, integration support, and documentation. Not consumer-facing products. Our clients remain the device manufacturer of record; we support their technical file and quality management processes as a qualified supplier.</p>
+        <p>Live demonstrations on real surgical video, technical briefings, and integration discussions are available under NDA following an initial qualification call.</p>
+        <div style="margin-top:32px;">
+          <a href="#contact" class="btn-primary" style="display:inline-flex;">Request technical brief &rarr;</a>
+        </div>
+      </div>
+
+      <div style="background:var(--surface);border-radius:var(--radius-lg);padding:36px 40px;">
+        <p style="font-size:15px;color:var(--ink-muted);line-height:1.75;margin-bottom:20px;">Our development practices align with IEC 62304 software lifecycle requirements, with traceable requirements, version control, and verification evidence throughout.</p>
+        <p style="font-size:15px;color:var(--ink-muted);line-height:1.75;margin-bottom:20px;">We support client supplier qualification under ISO 13485, provide risk analysis input compatible with ISO 14971 files, and deliver a full software bill of materials for inclusion in client technical files.</p>
+        <p style="font-size:15px;color:var(--ink-muted);line-height:1.75;">GDPR-aligned protocols govern all clinical data shared during integration and validation engagements.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="contact">
+  <div class="contact-inner">
+    <div class="section-label" style="justify-content:center;">Contact</div>
+    <h2>Start a conversation</h2>
+    <p class="lead">For technical briefings, integration discussions, or evaluation requests, reach us directly. Live demonstrations available under NDA.</p>
+
+    <div class="contact-card">
+      <p>Get in touch</p>
+      <a href="mailto:contact@symmetrylab.co.uk" class="contact-email">contact@symmetrylab.co.uk</a>
+      <p class="contact-note">SymmetryLab Ltd. registered in the UK. All rights reserved.<br>
+      The technology described on this site is a software component intended for integration into medical devices by qualified manufacturers under their own regulatory frameworks. SymmetryLab software is not itself a medical device, is not CE-marked or FDA-cleared as a standalone product, and is not intended for direct clinical use.</p>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="footer-inner">
+    <div>
+      <div class="footer-logo">SymmetryLab</div>
+      <p>Computer vision for surgical navigation.</p>
+      <ul class="footer-links">
+        <li><a href="#">Privacy policy</a></li>
+        <li><a href="#">Cookie policy</a></li>
+        <li><a href="#">Imprint</a></li>
+      </ul>
+    </div>
+    <div class="footer-disclaimer">
+      SymmetryLab software components are intended for integration into regulated medical devices by qualified manufacturers. Not a standalone medical device. Not CE-marked or FDA-cleared. Not for direct clinical use. All demonstrations provided under NDA.
+    </div>
+  </div>
+</footer>
+
+</body>
+</html>
